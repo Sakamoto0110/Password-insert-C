@@ -1,0 +1,121 @@
+public static async Task DM_Itens()
+{
+    QueryBuilder qb = new QueryBuilder();
+    qb.Select("*")
+        .From("DM_Itens")
+        .Where("Sincronizado=0")
+        .Build();
+
+    using(var comn = Globals.ConexaoAccess())
+    using(var cmd = new OleDbCommand(qb, comn))
+    using(var data = cmd.ExecuteReader())
+    {
+        while(data.Read())
+        {
+            OleTables.DM_Itens item = new OleTables.DM_ItensAdapter().Fill(data);
+            qb = new QueryBuilder();
+            qb.Select("*")
+                .From("DM_Itens")
+                .Where($"id_item={item.id_item}")
+                .Build();
+            using(var comn1 = Globals.ConexaoSQL())
+            using(var cmd1 = new SqlCommand(qb, comn1))
+            using(var data1 = cmd1.ExecuteReader())
+            {
+                var dict = new Dictionary<string, string>()
+                    {
+                        {"id_item",$"{item.id_item}" },
+                        {"id_cliente",$"{item.id_cliente           }" },
+                        {"ID_DM",$"{item.ID_DM                }" },
+                        {"id_produto",$"{item.id_produto           }" },
+                        {"Controladora",$"'{item.Controladora}'" },
+                        {"Placa",$"{item.Placa                }" },
+                        {"Motor1",$"{item.Motor1               }" },
+                        {"Motor2",$"'{item.Motor2               }'" },
+                        {"DIP",$"{item.DIP                  }" },
+                        {"Andar",$"{item.Andar                }" },
+                        {"Posicao",$"{item.Posicao              }" },
+                        {"quantidade",$"{item.quantidade           }" },
+                        {"quantidademinima",$"{item.quantidademinima     }" },
+                        {"capacidade",$"{item.capacidade           }" },
+                        {"deleted",$"'{item.deleted              }'" },
+                        {"nome",$"'{item.nome                 }'" },
+                        {"ProdutoCodigo",$"'{item.ProdutoCodigo        }'" },
+                        {"sku",$"'{item.sku                  }'" },
+                        {"imagem1",$"'{item.imagem1              }'" },
+                        {"ca",$"'{item.ca                   }'" },
+                        {"unidade_medida",$"'{item.unidade_medida       }'" },
+                        {"Sincronizado",$"{1}" },
+                    };
+                qb = new QueryBuilder();
+                if(data1.Read())
+                {
+
+                    qb.Update("DM_Itens", dict)
+                        .Where($"id_item={item.id_item}")
+                        .Build();
+                }
+                else
+                {
+                    qb.InsertInto("DM_Itens", dict)
+                        .Build();
+                }
+
+                Globals.SQL_INSERT_UPDATE_UPDATE(qb);
+            }
+            qb = new QueryBuilder();
+            qb.Update("DM_Itens", new Dictionary<string, string>()
+            {
+                { "Sincronizado",$"{1}" }
+            }).Where($"id_item={item.id_item}")
+            .Where($"id_cliente={Properties.Settings.Default.ID_CLIENTE}")
+            .Build();
+            Globals.ACCESS_INSERT_UPDATE(qb);
+        }
+    }
+
+}   
+
+
+
+
+
+
+
+
+
+
+
+
+public static async Task Ret_Itens_setor()
+{
+    var tableName = "Ret_Itens_setor";
+    var qb = new QueryBuilder();
+    qb.Select("*")
+      .From(tableName)
+      .Where("Sincronizado=0")
+      .Build();
+    AccessDatabase.ReadRowsFromInline(qb, _records => {
+        var records = _records.Values.Select(record => AccessDatabase.Parse(record)).ToDictionary(rec => rec.Name, rec => rec);
+        records["Sincronizado"].Value = "1";
+        qb = new QueryBuilder();
+        qb.Update(tableName, records.Values.ToDictionary(c => c.Name, c => c.Value))
+          .Where($"id_item_setor={records["id_item_setor"]}")
+          .Where($"id_cliente={Properties.Settings.Default.ID_CLIENTE}")
+          .Build();
+        Globals.ACCESS_INSERT_UPDATE(qb);
+        Globals.SQL_INSERT_UPDATE_UPDATE(qb);
+    });
+}
+
+
+
+
+
+
+
+
+
+
+
+
